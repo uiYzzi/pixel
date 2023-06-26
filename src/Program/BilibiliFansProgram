@@ -1,0 +1,86 @@
+#include <stdlib.h>
+#include <time.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+#include "BaseProgram.h"
+#include "drivers/LEDMatrix.h"
+#include "../asset/BilibiliImg.h"
+#include "config.h"
+
+class BilibiliFansProgram : public BaseProgram
+{
+public:
+    BilibiliFansProgram(LEDMatrix &screen) : screen_(screen)
+    {
+        url = String("https://api.bilibili.com/x/relation/stat?vmid=") + BILIILI_UID;
+    }
+
+    void run(float brightness) override
+    {
+        screen_.fill();
+        screen_.drawImage(0, 0, bilibili[0], brightness);
+        HTTPClient *http = new HTTPClient();
+        http->begin(url);
+        int httpCode = http->GET();
+        if (httpCode > 0)
+        {
+            DynamicJsonDocument *doc = new DynamicJsonDocument(256);
+            DeserializationError error = deserializeJson(*doc, http->getString());
+
+            if (error == DeserializationError::Ok)
+            {
+                followers = (*doc)["data"]["follower"].as<int>();
+                displayFollowerCount(followers, brightness);
+            }
+            else
+            {
+                Serial.printf("JSON parsing failed: %s\n", error.c_str());
+                return;
+            }
+
+            delete doc;
+        }
+        else
+        {
+            Serial.printf("HTTP request failed with error code %d\n", httpCode);
+            return;
+        }
+
+        http->end();
+        delete http;
+        screen_.show();
+        delay(2000);
+    }
+
+    void displayFollowerCount(int followerCount, float brightness)
+    {
+        char str[7];
+        if (followerCount < 1000)
+        {
+            sprintf(str, "%d", followerCount);
+        }
+        else if (followerCount < 1000000)
+        {
+            sprintf(str, "%.2fK", followerCount / 1000.0);
+        }
+        else
+        {
+            sprintf(str, "%.2fM", followerCount / 1000000.0);
+        }
+        int length = strlen(str);
+        int maxChars = (length < 6) ? length : 5;
+        for (int i = 0; i < maxChars; ++i)
+        {
+            screen_.drawChar(str[i], 8 + i * 4, 0, 124, 77, 255, brightness);
+        }
+        if (length > 5)
+        {
+            screen_.drawChar(str[length - 1], 28, 0, 124, 77, 255, brightness);
+        }
+    }
+
+private:
+    LEDMatrix &screen_;
+    String url;
+    int followers;
+};

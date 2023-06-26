@@ -1,0 +1,38 @@
+#include <stdlib.h>
+#include <time.h>
+#include <DHT.h>
+#include "BaseProgram.h"
+#include "drivers/LEDMatrix.h"
+#include "config.h"
+
+class HumidityProgram : public BaseProgram
+{
+public:
+    HumidityProgram(LEDMatrix &screen,DHT &dht) : screen_{screen}, dht_{dht} {}
+
+    void run(float bright) override
+    {
+        float h = dht_.readHumidity();    // 读取湿度值
+
+        if (isnan(h)) {      // 如果读取失败，则退出run函数
+            Serial.println("Failed to read from DHT sensor!");
+            return;
+        }
+        Serial.print("Humidity：");
+        Serial.println(h);
+        char humiStr[5]; // 存储湿度字符串
+        dtostrf(h, 3, 0, humiStr); // 将浮点数转换为字符串，不保留小数
+
+        // 在LED矩阵上显示湿度
+        screen_.fill(); // 清空LED矩阵
+        screen_.drawChar(humiStr[0], 8, 0, 0, 0, 255, bright);
+        screen_.drawChar(humiStr[1], 12, 0, 0, 0, 255, bright);
+        screen_.drawChar(humiStr[2], 16, 0, 0, 0, 255, bright);
+        screen_.drawChar('%', 20, 0, 0, 0, 255, bright); // 显示湿度单位（蓝色，亮度50%）
+        screen_.show();
+    }
+
+private:
+    LEDMatrix &screen_;
+    DHT &dht_;
+};

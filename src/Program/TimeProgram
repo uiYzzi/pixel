@@ -1,0 +1,124 @@
+#include <chrono>
+#include <thread>
+#include <WiFiUdp.h>
+#include <NTPClient.h>
+#include "BaseProgram.h"
+#include "config.h"
+#include "../asset/TimeImg.h"
+#include "drivers/LEDMatrix.h"
+
+class TimeProgram : public BaseProgram{
+public:
+    TimeProgram(LEDMatrix& screen,NTPClient& ntpClient, int updateInterval = 6) : 
+        screen_{screen},
+        ntpClient_{ntpClient},
+        updateInterval_{updateInterval * 60 * 60} // 将更新间隔时间转换为秒
+    {
+        imgs_.push_back(pacman);
+        imgs_.push_back(Luigi);
+    }
+
+    void run(float bright) override {
+        // 如果距离上次更新时间已经超过了更新间隔时间，则更新时间
+        auto now = std::chrono::system_clock::now();
+        if(now - lastUpdateTime_ > std::chrono::seconds(updateInterval_))
+        {
+            ntpClient_.update();
+            lastUpdateTime_ = now;
+        }
+
+        // 获取当前小时、分钟和秒数
+        uint8_t hour = ntpClient_.getHours();
+        uint8_t minute = ntpClient_.getMinutes();
+        // uint8_t second = ntpClient_.getSeconds();
+
+        if(minute != lastMinute_)
+        {
+            displayRunImage(bright);
+            lastMinute_ = minute;
+            currentImg_++;
+            if(currentImg_ >= imgs_.size())
+            {
+                currentImg_ = 0;
+            }
+        }
+        else
+        {
+            screen_.fill();
+            displayImage(0,0,bright);
+            displayTime(hour, minute, bright);
+        }
+    }
+
+private:
+    LEDMatrix& screen_;
+    NTPClient& ntpClient_;
+    std::vector<std::vector<std::vector<std::vector<std::vector<int>>>>> imgs_;
+    uint8_t lastMinute_ = 0;
+    uint8_t currentImg_ = 0;
+    uint8_t nowFrame_ = 0;
+    std::chrono::system_clock::time_point lastUpdateTime_ = std::chrono::system_clock::now();
+    int updateInterval_;
+
+    void displayRunImage(float bright)
+    {
+        uint8_t xPos = 0;
+        while(true)
+        {
+            for (size_t i = 0; i < 8; i++)
+            {
+                for (size_t j = 0; j < 8; j++)
+                {
+                    screen_.drawPixel(xPos+j,i,0,0,0,bright);
+                }
+            }
+            displayImage(xPos + 1, 0, bright);
+            screen_.show();
+            xPos++;
+            if(xPos >= SCREEN_WIDTH)
+            {
+                break;
+            }
+
+            delay(100);
+        }
+    }
+
+    void displayImage(int16_t x, int16_t y, float bright)
+    {
+        if(nowFrame_ >= imgs_[currentImg_].size())
+        {
+            nowFrame_ = 0;
+            screen_.drawImage(x, y, imgs_[currentImg_][nowFrame_], bright);
+        }
+        else
+        {
+            screen_.drawImage(x, y, imgs_[currentImg_][nowFrame_], bright);
+            nowFrame_++;
+        }
+
+    }
+
+    void displayTime(uint8_t hour, uint8_t minute, float bright)
+    {
+        char hourStr[2];
+        itoa(hour,hourStr,10);
+        char minuteStr[2];
+        itoa(minute,minuteStr,10);
+        screen_.drawChar(hourStr[0], 11, 0, 124, 77, 255, bright);
+        screen_.drawChar(hourStr[1], 15, 0, 124, 77, 255, bright);
+
+        screen_.drawChar(minuteStr[0], 22,0 ,124 ,77 ,255 ,bright);
+        screen_.drawChar(minuteStr[1], 26 ,0 ,124 ,77 ,255 ,bright);
+        
+        screen_.drawPixel(19, 3, 124, 77, 255, bright);
+        screen_.drawPixel(19, 5, 124, 77, 255, bright);
+        // screen_.drawPixel(21 ,3 ,124 ,77 ,255 ,bright);
+        // screen_.drawPixel(21 ,5 ,124 ,77 ,255 ,bright);
+
+        // screen_.drawNum(second /10 ,24 ,2 ,124 ,77 ,255 ,bright);
+        // screen_.drawNum(second %10 ,28 ,2 ,124 ,77 ,255 ,bright);
+
+        screen_.show();
+    }
+};

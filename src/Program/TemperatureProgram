@@ -1,0 +1,39 @@
+#include <stdlib.h>
+#include <time.h>
+#include <DHT.h>
+#include "BaseProgram.h"
+#include "drivers/LEDMatrix.h"
+#include "config.h"
+
+class TemperatureProgram : public BaseProgram
+{
+public:
+    TemperatureProgram(LEDMatrix &screen,DHT &dht) : screen_{screen}, dht_{dht} {}
+
+    void run(float bright) override
+    {
+        float t = dht_.readTemperature(); // 读取温度值（单位：摄氏度）
+
+        if (isnan(t)) {      // 如果读取失败，则退出run函数
+            Serial.println("Failed to read from DHT sensor!");
+            return;
+        }
+        Serial.print("Temperature：");
+        Serial.println(t);
+        char tempStr[6]; // 存储温度字符串
+        dtostrf(t, 4, 1, tempStr); // 将浮点数转换为字符串，保留1位小数
+
+        // 在LED矩阵上显示温度
+        screen_.fill(); // 清空LED矩阵
+        screen_.drawChar(tempStr[0], 8, 0, 255, 0, 0, bright); // 显示温度第一位数字（红色，亮度100%）
+        screen_.drawChar(tempStr[1], 12, 0, 255, 0, 0, bright); // 显示温度第二位数字（红色，亮度100%）
+        screen_.drawChar(tempStr[2], 16, 0, 255, 0, 0, bright); // 显示温度小数点（红色，亮度100%）
+        screen_.drawChar(tempStr[3], 20, 0, 255, 0, 0, bright); // 显示温度第三位数字（红色，亮度100%）
+        screen_.drawChar('C', 24, 0, 255, 0, 0, 0.5); // 显示温度单位（红色，亮度50%）
+        screen_.show();
+    }
+
+private:
+    LEDMatrix &screen_;
+    DHT &dht_;
+};

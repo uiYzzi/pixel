@@ -1,0 +1,74 @@
+#include <stdlib.h>
+#include <time.h>
+#include "BaseProgram.h"
+#include "drivers/LEDMatrix.h"
+#include "config.h"
+
+class CodeRainProgram : public BaseProgram
+{
+public:
+    CodeRainProgram(LEDMatrix &screen) : screen_{screen} {}
+
+    // 创建随机雨滴
+    void create_raindrop()
+    {
+        uint8_t x = rand() % SCREEN_WIDTH;
+        uint8_t speed = rand() % 3 + 1;
+
+        r = rand() % 256;
+        g = rand() % 256;
+        b = rand() % 256;
+
+        raindrop_ = {x, 0, speed};
+    }
+
+    // 代码雨主逻辑
+    void run(float bright) override
+    {
+        screen_.fill();
+        // 创建新雨滴
+        if (raindrops.size() < 10)
+        {
+            create_raindrop();
+            raindrops.push_back(raindrop_);
+        }
+
+        // 更新和绘制雨滴
+        for (int i = 0; i < raindrops.size(); i++)
+        {
+            uint8_t x = raindrops[i][0];
+            uint8_t y = raindrops[i][1];
+            uint8_t speed = raindrops[i][2];
+
+            // 绘制当前雨滴
+            screen_.drawPixel(x, y, r, g, b, bright);
+
+            // 更新当前雨滴位置
+            y += speed;
+
+            // 边界处理
+            if (y >= SCREEN_HEIGHT)
+            {
+                create_raindrop();
+                raindrops[i] = raindrop_;
+            }
+            else
+            {
+                raindrops[i][1] = y;
+            }
+
+            // 控制雨滴下落速度
+            delay(20);
+        }
+
+        screen_.show();
+    }
+
+private:
+    LEDMatrix &screen_;
+    std::vector<std::array<int, 3>> raindrops;
+    std::array<int, 3> raindrop_;
+    int r;
+    int g;
+    int b;
+};

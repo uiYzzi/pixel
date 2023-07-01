@@ -9,7 +9,7 @@
 
 class TimeProgram : public BaseProgram{
 public:
-    TimeProgram(LEDMatrix& screen,NTPClient& ntpClient, int updateInterval = 6) : 
+    TimeProgram(LEDMatrix& screen,NTPClient& ntpClient, int updateInterval = 1) : 
         screen_{screen},
         ntpClient_{ntpClient},
         updateInterval_{updateInterval * 60 * 60} // 将更新间隔时间转换为秒
@@ -21,7 +21,9 @@ public:
         imgs_.push_back(img_dog);
     }
 
-    void run(float bright) override {
+    void begin() override{}
+
+    void update(float bright) override {
         // 如果距离上次更新时间已经超过了更新间隔时间，则更新时间
         auto now = std::chrono::system_clock::now();
         if(now - lastUpdateTime_ > std::chrono::seconds(updateInterval_))

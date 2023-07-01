@@ -9,21 +9,35 @@
 class TemperatureProgram : public BaseProgram
 {
 public:
-    TemperatureProgram(LEDMatrix &screen,DHT &dht) : screen_{screen}, dht_{dht} {}
+    TemperatureProgram(LEDMatrix &screen,DHT &dht) : screen_{screen}, dht_{dht} {        updateInterval = 2000; // 新增一个变量来定义更新的时间间隔，单位毫秒
+    }
+    
+    void begin() override{
+        unsigned long now = millis(); // 获取当前时间
+        updateTemperature(now);
+    }
 
-    void run(float bright) override
+    void updateTemperature(int now)
     {
-        float t = dht_.readTemperature(); // 读取温度值（单位：摄氏度）
+        t = dht_.readTemperature();    // 读取湿度值
 
-        if (isnan(t)) {      // 如果读取失败，则退出run函数
+        if (isnan(t)) {      // 如果读取失败，则退出update函数
             Serial.println("Failed to read from DHT sensor!");
             return;
         }
+        dtostrf(t, 4, 1, tempStr); // 将浮点数转换为字符串，保留1位小数
         Serial.print("Temperature：");
         Serial.println(t);
-        char tempStr[6]; // 存储温度字符串
-        dtostrf(t, 4, 1, tempStr); // 将浮点数转换为字符串，保留1位小数
+        lastUpdate = now; // 更新上一次更新的时间
+    }
 
+    void update(float bright) override
+    {
+        unsigned long now = millis(); // 获取当前时间
+        if (now - lastUpdate >= updateInterval)
+        { // 如果已经过了更新的时间间隔
+            updateTemperature(now);
+        }
         // 在LED矩阵上显示温度
         screen_.fill(); // 清空LED矩阵
         screen_.drawImage(0,0,img_temperature,0,bright);
@@ -36,6 +50,10 @@ public:
     }
 
 private:
+    float t;
+    char tempStr[6];
+    unsigned long lastUpdate;     // 新增一个变量来记录上一次更新的时间
+    unsigned long updateInterval; // 新增一个变量来定义更新的时间间隔，单位毫秒
     LEDMatrix &screen_;
     DHT &dht_;
 };

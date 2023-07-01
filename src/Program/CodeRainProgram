@@ -8,6 +8,8 @@ class CodeRainProgram : public BaseProgram
 {
 public:
     CodeRainProgram(LEDMatrix &screen) : screen_{screen} {}
+    
+    void begin() override{}
 
     // 创建随机雨滴
     void create_raindrop()
@@ -23,7 +25,7 @@ public:
     }
 
     // 代码雨主逻辑
-    void run(float bright) override
+    void update(float bright) override
     {
         screen_.fill();
         // 创建新雨滴

@@ -18,23 +18,6 @@
 #include "config.h"
 #include "../asset/Img.h"
 
-
-// 定义音符频率
-#define C4 262
-#define D4 294
-#define E4 330
-#define F4 349
-#define G4 392
-#define A4 440
-#define B4 494
-#define C5 523
-
-// 定义音符时值（单位为毫秒）
-#define WHOLE_NOTE 1000
-#define HALF_NOTE 500
-#define QUARTER_NOTE 250
-#define EIGHTH_NOTE 125
-
 Adafruit_NeoPixel ledStrip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 LEDMatrix screen(ledStrip, SCREEN_WIDTH, SCREEN_HEIGHT);
 Buzzer buzzer(BUZZER_PIN);
@@ -58,32 +41,8 @@ double bright = 0.5;
 int appIndex = 0;   // 当前应用的索引
 unsigned long lastSwitchTime = 0;   // 上一次切换应用的时间
 
-// 定义小星星旋律数组（每个元素包含音符频率和时值）
-int melody[][2] = {
-  {C4, QUARTER_NOTE}, {C4, QUARTER_NOTE}, {G4, QUARTER_NOTE}, {G4, QUARTER_NOTE},
-  {A4, QUARTER_NOTE}, {A4, QUARTER_NOTE}, {G4, HALF_NOTE},
-  {F4, QUARTER_NOTE}, {F4, QUARTER_NOTE}, {E4, QUARTER_NOTE}, {E4, QUARTER_NOTE},
-  {D4, QUARTER_NOTE}, {D4, QUARTER_NOTE}, {C4, HALF_NOTE}
-};
-// 定义小星星旋律数组的长度
-int melodyLength = sizeof(melody) / sizeof(melody[0]);
-
 template <class T>
 int getArrayLen(T &array){return sizeof(array) / sizeof(array[0]);}
-
-// 定义一个函数，用于播放小星星旋律
-void playTwinkleTwinkle() {
-  // 遍历旋律数组中的每个元素
-  for (int i = 0; i < melodyLength; i++) {
-    // 获取当前元素中的音符频率和时值
-    int frequency = melody[i][0];
-    int duration = melody[i][1];
-    // 调用Buzzer类的beep方法，播放当前音符
-    buzzer.beep(frequency, duration);
-    // 播放完毕后，暂停一小会儿，增加节奏感
-    delay(50);
-  }
-}
 
 void SmartConfig()
 {
@@ -169,7 +128,7 @@ void setup() {
     {
       SmartConfig();
     }
-    //playTwinkleTwinkle();
+
     gpio_install_isr_service(0);
     backButton.begin();
     goButton.begin();
@@ -182,11 +141,15 @@ void setup() {
     screen.drawImage(16,0,img_true,0,bright);
     screen.show();
     delay(1000);
-    ntpClient.update();
+    for(int i = 0;i<getArrayLen(programs);i++)
+    {
+      programs[i]->begin();
+    }
     server.on("/", handleRoot);
     server.on("/animation", handleAnimation);
     server.begin();
     Serial.println("HTTP server started");
+    ntpClient.update();
 }
 
 void loop() {
@@ -232,7 +195,7 @@ void loop() {
         lastSwitchTime = currentTime;
     }
 
-    programs[appIndex]->run(bright);
+    programs[appIndex]->update(bright);
 
     // 延迟一段时间，避免过于频繁地切换应用
     delay(100);

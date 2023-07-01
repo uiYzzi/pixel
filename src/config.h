@@ -2,6 +2,8 @@
 #define LED_PIN  14
 #define BACK_BUTTON_PIN 37
 #define GO_BUTTON_PIN 5
+#define UP_BUTTON_PIN 43
+#define DOWN_BUTTON_PIN 4
 #define DHT_PIN 36
 #define DHTTYPE DHT11
 #define SCREEN_WIDTH 32

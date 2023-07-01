@@ -2,6 +2,7 @@
 #define LEDMATRIX_H_
 
 #include <vector>
+#include <ArduinoJson.h>
 #include <Adafruit_NeoPixel.h>
 
 class LEDMatrix {
@@ -10,8 +11,11 @@ public:
     void drawPixel(int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b, float bright=0.5);
     void drawChar(char c, int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b, float bright=0.5);
     void drawCharForIndex(int16_t index, int16_t x, int16_t y, uint8_t r, uint8_t g, uint8_t b, float bright=0.5);
-    void drawImage(int16_t x, int16_t y, std::vector<std::vector<std::vector<int>>> imgData, float bright);
-    void drawImage(int16_t xPos, int16_t yPos,const char* json, float bright);
+    void drawImage(int16_t x, int16_t y, std::vector<std::vector<std::vector<int>>> imgData, float bright=0.5);
+    void drawImage(int16_t xPos, int16_t yPos, const char* json, int frameIndex=0, float bright=0.5);
+    void drawFrame(int16_t xPos, int16_t yPos, JsonArray frameArray, int frameWidth, int frameHeight, float bright=0.5);
+    void playAnimation(int16_t xPos, int16_t yPos, const char* json, int16_t animationDelay = 200, float bright=0.5);
+    int getTotalFrames(const char* json);
     void intToRGB(int value, int& r, int& g, int& b);
     void fill(uint8_t r=0, uint8_t g=0, uint8_t b=0);
     void show();

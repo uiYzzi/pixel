@@ -4,7 +4,7 @@
 #include <NTPClient.h>
 #include "BaseProgram.h"
 #include "config.h"
-#include "../asset/TimeImg.h"
+#include "../asset/Img.h"
 #include "drivers/LEDMatrix.h"
 
 class TimeProgram : public BaseProgram{
@@ -14,8 +14,11 @@ public:
         ntpClient_{ntpClient},
         updateInterval_{updateInterval * 60 * 60} // 将更新间隔时间转换为秒
     {
-        imgs_.push_back(pacman);
-        imgs_.push_back(Luigi);
+        imgs_.push_back(img_pacman);
+        imgs_.push_back(img_cat);
+        imgs_.push_back(img_ptitcanouch);
+        imgs_.push_back(img_terminal);
+        imgs_.push_back(img_dog);
     }
 
     void run(float bright) override {
@@ -53,7 +56,7 @@ public:
 private:
     LEDMatrix& screen_;
     NTPClient& ntpClient_;
-    std::vector<std::vector<std::vector<std::vector<std::vector<int>>>>> imgs_;
+    std::vector<const char*> imgs_;
     uint8_t lastMinute_ = 0;
     uint8_t currentImg_ = 0;
     uint8_t nowFrame_ = 0;
@@ -86,17 +89,16 @@ private:
 
     void displayImage(int16_t x, int16_t y, float bright)
     {
-        if(nowFrame_ >= imgs_[currentImg_].size())
+        if(nowFrame_ >= screen_.getTotalFrames(imgs_[currentImg_]))
         {
             nowFrame_ = 0;
-            screen_.drawImage(x, y, imgs_[currentImg_][nowFrame_], bright);
+            screen_.drawImage(x, y, imgs_[currentImg_], nowFrame_, bright);
         }
         else
         {
-            screen_.drawImage(x, y, imgs_[currentImg_][nowFrame_], bright);
+            screen_.drawImage(x, y, imgs_[currentImg_], nowFrame_, bright);
             nowFrame_++;
         }
-
     }
 
     void displayTime(uint8_t hour, uint8_t minute, float bright)
@@ -105,11 +107,23 @@ private:
         itoa(hour,hourStr,10);
         char minuteStr[2];
         itoa(minute,minuteStr,10);
-        screen_.drawChar(hourStr[0], 11, 0, 124, 77, 255, bright);
-        screen_.drawChar(hourStr[1], 15, 0, 124, 77, 255, bright);
 
-        screen_.drawChar(minuteStr[0], 22,0 ,124 ,77 ,255 ,bright);
-        screen_.drawChar(minuteStr[1], 26 ,0 ,124 ,77 ,255 ,bright);
+        if(strlen(hourStr)==1)
+        {
+            screen_.drawChar(hourStr[0], 13, 0, 124, 77, 255, bright);
+        }else{
+            screen_.drawChar(hourStr[0], 8, 0, 124, 77, 255, bright);
+            screen_.drawChar(hourStr[1], 13, 0, 124, 77, 255, bright);
+        }
+
+        if(strlen(minuteStr)==1)
+        {
+            screen_.drawChar('0', 20,0 ,124 ,77 ,255 ,bright);
+            screen_.drawChar(minuteStr[0], 25 ,0 ,124 ,77 ,255 ,bright);
+        }else{
+            screen_.drawChar(minuteStr[0], 20,0 ,124 ,77 ,255 ,bright);
+            screen_.drawChar(minuteStr[1], 25 ,0 ,124 ,77 ,255 ,bright);
+        }
         
         screen_.drawPixel(19, 3, 124, 77, 255, bright);
         screen_.drawPixel(19, 5, 124, 77, 255, bright);

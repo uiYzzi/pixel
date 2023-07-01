@@ -2,7 +2,7 @@
 #define BUZZER_H
 
 #include <Arduino.h>
-
+#include <ArduinoJson.h>
 class Buzzer {
   public:
     Buzzer(uint8_t pin);

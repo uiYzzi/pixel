@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <DHT.h>
+#include "../asset/Img.h"
 #include "BaseProgram.h"
 #include "drivers/LEDMatrix.h"
 #include "config.h"
@@ -25,6 +26,7 @@ public:
 
         // 在LED矩阵上显示湿度
         screen_.fill(); // 清空LED矩阵
+        screen_.drawImage(0,0,img_temp_hum,0,bright);
         screen_.drawChar(humiStr[0], 8, 0, 0, 0, 255, bright);
         screen_.drawChar(humiStr[1], 12, 0, 0, 0, 255, bright);
         screen_.drawChar(humiStr[2], 16, 0, 0, 0, 255, bright);

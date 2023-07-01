@@ -2,6 +2,7 @@
 #include <WiFi.h>
 #include <DHT.h>
 #include <time.h>
+#include <WebServer.h>
 #include <Adafruit_NeoPixel.h>
 #include <esp_wifi.h>
 #include <esp_system.h>
@@ -15,7 +16,7 @@
 #include "Program/HumidityProgram"
 #include "Program/BaseProgram.h"
 #include "config.h"
-#include "../asset/WifiImg.h"
+#include "../asset/Img.h"
 
 
 // 定义音符频率
@@ -39,18 +40,21 @@ LEDMatrix screen(ledStrip, SCREEN_WIDTH, SCREEN_HEIGHT);
 Buzzer buzzer(BUZZER_PIN);
 Button backButton(BACK_BUTTON_PIN,5000);
 Button goButton(GO_BUTTON_PIN);
+Button upButton(UP_BUTTON_PIN);
+Button downButton(DOWN_BUTTON_PIN);
 std::vector<int> wifi_connect_x = {24, 26, 28};
 // Configure NTP client
 WiFiUDP udp;
 NTPClient ntpClient(udp, NTP_SERVER, TIME_ZONE_OFFSET_IN_SECONDS, UPDATE_INTERVALMILLIS);
 DHT dht(DHT_PIN,DHTTYPE);
+WebServer server(80);
 TimeProgram timeProgram(screen,ntpClient);
 CodeRainProgram codeRainProgram(screen);
 BilibiliFansProgram bilibiliFansProgram(screen);
 TemperatureProgram temperatureProgram(screen,dht);
 HumidityProgram humidityProgram(screen,dht);
 BaseProgram* programs[] = { &timeProgram, &codeRainProgram, &bilibiliFansProgram, &temperatureProgram, &humidityProgram };
-double bright = 0.1;
+double bright = 0.5;
 int appIndex = 0;   // 当前应用的索引
 unsigned long lastSwitchTime = 0;   // 上一次切换应用的时间
 
@@ -123,7 +127,6 @@ bool AutoConfig()
           Serial.print("WIFI AutoConfig Waiting ....");
           Serial.println(wstatus);
           delay(1000);
-        
        }
     
   }
@@ -131,10 +134,34 @@ bool AutoConfig()
   return false;
 }
 
+void handleRoot() {
+  server.send(200, "text/plain", "Hello from ESP32!");
+}
+
+void handleAnimation() {
+  if (server.args() == 5) {
+    int16_t xPos = server.arg(0).toInt();
+    int16_t yPos = server.arg(1).toInt();
+    const char* json = server.arg(2).c_str();
+    float bright = server.arg(3).toFloat();
+    int16_t animationDelay = server.arg(4).toInt();
+
+    // 调用 playAnimation 函数进行显示
+    screen.fill();
+    screen.playAnimation(xPos, yPos, json, animationDelay, bright);
+    server.send(200, "text/plain", "Animation played!");
+  } else {
+    server.send(400, "text/plain", "Invalid number of arguments.");
+  }
+}
+
 void setup() {
     screen.fill();
-    screen.drawImage(0,0,"[0,0,0,65318,58761,0,0,0,0,0,65517,65517,65318,58761,0,0,0,0,65517,65512,65318,58761,0,0,0,0,65318,65318,65318,65318,0,0,0,58761,58761,58761,58761,62853,62853,0,0,58761,65318,65318,65318,58761,58761,0,65318,65318,62853,62853,62853,62853,58761,58761,0,0,62853,62853,65318,58761,0,0]",bright);
-    //screen.drawImage(0, 0, wifi22x8[0], bright);
+    screen.drawImage(0,0,img_wifi,0,bright);
+    screen.drawChar('W',10,0,255,255,255,bright);
+    screen.drawChar('I',14,0,255,255,255,bright);
+    screen.drawChar('F',18,0,255,255,255,bright);
+    screen.drawChar('I',22,0,255,255,255,bright);
     screen.show();
     Serial.begin(115200);
     delay(100);
@@ -142,19 +169,33 @@ void setup() {
     {
       SmartConfig();
     }
-    // playTwinkleTwinkle();
+    //playTwinkleTwinkle();
     gpio_install_isr_service(0);
     backButton.begin();
     goButton.begin();
+    upButton.begin();
+    downButton.begin();
     ledStrip.begin();
     ledStrip.show();
-    screen.drawImage(23, 0, wifi22x8[1], bright);
-    ntpClient.update();
+    screen.fill();
+    screen.drawImage(0,0,img_wifi,0,bright);
+    screen.drawImage(16,0,img_true,0,bright);
     screen.show();
     delay(1000);
+    ntpClient.update();
+    server.on("/", handleRoot);
+    server.on("/animation", handleAnimation);
+    server.begin();
+    Serial.println("HTTP server started");
 }
 
 void loop() {
+    server.handleClient();
+    backButton.update();
+    goButton.update();
+    upButton.update();
+    downButton.update();
+
     if (backButton.wasPressed()) {
       Serial.println("Back Button was pressed!");
     }
@@ -166,15 +207,27 @@ void loop() {
     if (goButton.wasPressed()) {
       Serial.println("Go Button was pressed!");
     }
-
+    if (upButton.wasPressed()) {
+      Serial.println("Up Button was pressed!");
+      if(appIndex <= 0)
+      {
+        appIndex = getArrayLen(programs) - 1;
+      }else{
+        appIndex -= 1;
+      }
+    }
+    if (downButton.wasPressed()) {
+      Serial.println("Down Button was pressed!");
+      appIndex = (appIndex + 1) % getArrayLen(programs);   // 切换到下一个应用
+    }
+    // size_t freeHeap = esp_get_free_heap_size();
+    // Serial.print("Free heap: ");
+    // Serial.println(freeHeap);
     // 当前时间
     unsigned long currentTime = millis();
-    //100000
-    if (currentTime - lastSwitchTime >= 2000 || (appIndex != 0 && currentTime - lastSwitchTime >= 2000)) {
+
+    if (currentTime - lastSwitchTime >= 100000 || (appIndex != 0 && currentTime - lastSwitchTime >= 50000)) {
         appIndex = (appIndex + 1) % getArrayLen(programs);   // 切换到下一个应用
-        size_t freeHeap = esp_get_free_heap_size();
-        Serial.print("Free heap: ");
-        Serial.println(freeHeap);
         
         lastSwitchTime = currentTime;
     }

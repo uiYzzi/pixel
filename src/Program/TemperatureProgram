@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <DHT.h>
+#include "../asset/Img.h"
 #include "BaseProgram.h"
 #include "drivers/LEDMatrix.h"
 #include "config.h"
@@ -25,6 +26,7 @@ public:
 
         // 在LED矩阵上显示温度
         screen_.fill(); // 清空LED矩阵
+        screen_.drawImage(0,0,img_temperature,0,bright);
         screen_.drawChar(tempStr[0], 8, 0, 255, 0, 0, bright); // 显示温度第一位数字（红色，亮度100%）
         screen_.drawChar(tempStr[1], 12, 0, 255, 0, 0, bright); // 显示温度第二位数字（红色，亮度100%）
         screen_.drawChar(tempStr[2], 16, 0, 255, 0, 0, bright); // 显示温度小数点（红色，亮度100%）

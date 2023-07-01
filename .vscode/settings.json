@@ -75,6 +75,8 @@
         "bilibilifansprogram": "cpp",
         "dhtprogram": "cpp",
         "temperatureprogram": "cpp",
-        "humidityprogram": "cpp"
+        "humidityprogram": "cpp",
+        "bitset": "cpp",
+        "regex": "cpp"
     }
 }

@@ -56,9 +56,6 @@ public:
             {
                 raindrops[i][1] = y;
             }
-
-            // 控制雨滴下落速度
-            delay(20);
         }
 
         screen_.show();

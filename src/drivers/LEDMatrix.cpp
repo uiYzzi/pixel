@@ -1,5 +1,4 @@
 #include "LEDMatrix.h"
-#include <ArduinoJson.h>
 #include "../asset/Font.h"
 
 template <class T>
@@ -63,20 +62,63 @@ void LEDMatrix::drawImage(int16_t x, int16_t y, std::vector<std::vector<std::vec
     }
 }
 
-void LEDMatrix::drawImage(int16_t xPos, int16_t yPos,const char* json, float bright) {
-  StaticJsonDocument<1000> doc;
-  deserializeJson(doc, json);
+void LEDMatrix::drawImage(int16_t xPos, int16_t yPos, const char* json, int frameIndex, float bright) {
+  DynamicJsonDocument doc(7000);
+  deserializeJson(doc, "[" + std::string(json) + "]");
 
-  for (int i = 0; i < 8; i++) {
-    for (int j = 0; j < 8; j++) {
-      int index = i * 8 + j;
-      int value = doc[index];
-      Serial.println(value);
-      int r, g, b;
-      intToRGB(value, r, g, b);
-      drawPixel(j+xPos, i+yPos, r, g, b);
+  JsonArray frameArray = doc[frameIndex];
+  int frameHeight = 8;
+  int frameWidth = frameArray.size() / frameHeight;
+
+  drawFrame(xPos, yPos, frameArray, frameWidth, frameHeight, bright);
+}
+
+void LEDMatrix::playAnimation(int16_t xPos, int16_t yPos, const char* json, int16_t animationDelay, float bright) {
+  DynamicJsonDocument doc(7000);
+  deserializeJson(doc, "[" + std::string(json) + "]");
+  int totalFrames = doc.size();
+  
+  for (int i = 0; i < totalFrames; i++) {
+    JsonArray frameArray = doc[i];
+    int frameHeight = 8;
+    int frameWidth = frameArray.size() / frameHeight;
+    
+    drawFrame(xPos, yPos, frameArray, frameWidth, frameHeight, bright);
+    show();
+    delay(animationDelay);
+  }
+}
+
+void LEDMatrix::drawFrame(int16_t xPos, int16_t yPos, JsonArray frameArray, int frameWidth, int frameHeight, float bright) {
+  if (frameWidth > 8) {
+    for (int i = 0; i < frameHeight; i++) {
+      for (int j = 0; j < frameWidth; j++) {
+        int index = i * frameWidth + j;
+        int value = frameArray[index];
+        int r, g, b;
+        intToRGB(value, r, g, b);
+        drawPixel(j + xPos, i + yPos, r, g, b);
+      }
+    }
+  } else {
+    for (int i = 0; i < frameHeight; i++) {
+      for (int j = 0; j < frameWidth; j++) {
+        int index = i * frameWidth + j;
+        int value = frameArray[index];
+        int r, g, b;
+        intToRGB(value, r, g, b);
+        drawPixel(j + xPos, i + yPos, r, g, b,bright);
+      }
     }
   }
+}
+
+
+
+int LEDMatrix::getTotalFrames(const char* json) {
+  DynamicJsonDocument doc(3000);
+  deserializeJson(doc, "[" + std::string(json) + "]");
+  return doc.size();
 }
 
 // Function to convert hex to binary string

@@ -20,17 +20,41 @@ public:
 
     void updateHumidity(int now)
     {
-        h = dht_.readHumidity();    // 读取湿度值
-
-        if (isnan(h)) {      // 如果读取失败，则退出update函数
-            Serial.println("Failed to read from DHT sensor!");
-            return;
+    // 定义一个数组来存储多次采样的湿度值
+    static float h_array[5];
+    for (int i = 0; i < 5; i++) {
+        h_array[i] = dht_.readHumidity(); // 读取湿度值
+        if (isnan(h_array[i])) { // 如果读取失败，则退出update函数
+        Serial.println("Failed to read from DHT sensor!");
+        return;
         }
+    }
+    
+    // 对数组进行排序
+    for (int i = 0; i < 4; i++) {
+        for (int j = i + 1; j < 5; j++) {
+        if (h_array[i] > h_array[j]) {
+            float temp = h_array[i];
+            h_array[i] = h_array[j];
+            h_array[j] = temp;
+        }
+        }
+    }
+    
+    // 去除最大值和最小值，计算剩余值的平均值
+    float h_avg = (h_array[1] + h_array[2] + h_array[3]) / 3;
+    
+    // 使用一个阈值来判断湿度值是否有变化
+    float threshold = 5; // 可以根据需要调整阈值
+    if (abs(h_avg - h) > threshold) { // 如果变化超过阈值，则更新湿度值
+        h = h_avg;
         dtostrf(h, 3, 0, humiStr); // 将浮点数转换为字符串，不保留小数
         Serial.print("Humidity：");
         Serial.println(h);
         lastUpdate = now; // 更新上一次更新的时间
     }
+    }
+
 
     void update(float bright) override
     {

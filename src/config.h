@@ -1,5 +1,6 @@
 #define BUZZER_PIN 12
 #define LED_PIN  14
+#define PHOTORESISTOR_PIN 7
 #define BACK_BUTTON_PIN 37
 #define GO_BUTTON_PIN 5
 #define UP_BUTTON_PIN 43

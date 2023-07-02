@@ -9,6 +9,7 @@
 #include "drivers/Button.h"
 #include "drivers/LEDMatrix.h"
 #include "drivers/Buzzer.h"
+#include "drivers/Photoresistor.h"
 #include "Program/TimeProgram"
 #include "Program/CodeRainProgram"
 #include "Program/BilibiliFansProgram"
@@ -31,6 +32,7 @@ WiFiUDP udp;
 NTPClient ntpClient(udp, NTP_SERVER, TIME_ZONE_OFFSET_IN_SECONDS, UPDATE_INTERVALMILLIS);
 DHT dht(DHT_PIN,DHTTYPE);
 WebServer server(80);
+Photoresistor pr(PHOTORESISTOR_PIN, 4700, 1.1);
 TimeProgram timeProgram(screen,ntpClient);
 CodeRainProgram codeRainProgram(screen);
 BilibiliFansProgram bilibiliFansProgram(screen);
@@ -158,6 +160,24 @@ void loop() {
     goButton.update();
     upButton.update();
     downButton.update();
+
+    float r = pr.getResistance();
+    // 使用一个滑动平均滤波器
+    static float r_array[10];
+    static int index = 0;
+    r_array[index] = r;
+    index = (index + 1) % 10;
+    float r_avg = 0;
+    for (int i = 0; i < 10; i++) {
+      r_avg += r_array[i];
+    }
+    r_avg /= 10;
+    
+    // 使用一个线性函数
+    float bright = (18000 - r_avg) / (18000 - 4500);
+    
+    // 使用一个限幅函数
+    bright = constrain(bright, 0, 1);
 
     if (backButton.wasPressed()) {
       Serial.println("Back Button was pressed!");

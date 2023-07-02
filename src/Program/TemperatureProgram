@@ -19,17 +19,41 @@ public:
 
     void updateTemperature(int now)
     {
-        t = dht_.readTemperature();    // 读取湿度值
-
-        if (isnan(t)) {      // 如果读取失败，则退出update函数
-            Serial.println("Failed to read from DHT sensor!");
-            return;
+    // 定义一个数组来存储多次采样的温度值
+    static float t_array[5];
+    for (int i = 0; i < 5; i++) {
+        t_array[i] = dht_.readTemperature(); // 读取湿度值
+        if (isnan(t_array[i])) { // 如果读取失败，则退出update函数
+        Serial.println("Failed to read from DHT sensor!");
+        return;
         }
+    }
+    
+    // 对数组进行排序
+    for (int i = 0; i < 4; i++) {
+        for (int j = i + 1; j < 5; j++) {
+        if (t_array[i] > t_array[j]) {
+            float temp = t_array[i];
+            t_array[i] = t_array[j];
+            t_array[j] = temp;
+        }
+        }
+    }
+    
+    // 去除最大值和最小值，计算剩余值的平均值
+    float t_avg = (t_array[1] + t_array[2] + t_array[3]) / 3;
+    
+    // 使用一个阈值来判断温度值是否有变化
+    float threshold = 0.5; // 可以根据需要调整阈值
+    if (abs(t_avg - t) > threshold) { // 如果变化超过阈值，则更新温度值
+        t = t_avg;
         dtostrf(t, 4, 1, tempStr); // 将浮点数转换为字符串，保留1位小数
         Serial.print("Temperature：");
         Serial.println(t);
         lastUpdate = now; // 更新上一次更新的时间
     }
+    }
+
 
     void update(float bright) override
     {
@@ -45,7 +69,7 @@ public:
         screen_.drawChar(tempStr[1], 12, 0, 255, 0, 0, bright); // 显示温度第二位数字（红色，亮度100%）
         screen_.drawChar(tempStr[2], 16, 0, 255, 0, 0, bright); // 显示温度小数点（红色，亮度100%）
         screen_.drawChar(tempStr[3], 20, 0, 255, 0, 0, bright); // 显示温度第三位数字（红色，亮度100%）
-        screen_.drawChar('C', 24, 0, 255, 0, 0, 0.5); // 显示温度单位（红色，亮度50%）
+        screen_.drawChar('C', 24, 0, 255, 0, 0, bright); // 显示温度单位（红色，亮度50%）
         screen_.show();
     }
 
